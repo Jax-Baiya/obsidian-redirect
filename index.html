@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Redirecting...</title>
+        <script>
+            //Get URL paramaters to retrieve vault and file
+            const params = new URLSearchParams(window.location.search);
+            const vault = params.get('vault');
+            const file = params.get('file');
+
+            if (vault && file) {
+                //Create the Obsidian URL
+                const obsidianURI = `obsidian://open?vault=${vault}&file=${encodeURIComponent(file)}`;
+                window.location.href = obsidianURI; // Redirect to Obsidian URI
+            } else {
+                document.write("Invalid or missing parameters for redirect.");
+            }
+        </script>    
+    </head>
+    <body>
+        <h1>Redirecting to Obsidian...</h1>
+    </body>
+</html>

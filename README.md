@@ -1,1 +1,1 @@
-# Obsiadian-redirect
+# Obsidian-redirect
