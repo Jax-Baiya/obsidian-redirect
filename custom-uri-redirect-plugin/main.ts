@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent } from 'obsidian';
 
 export default class CustomUriRedirectPlugin extends Plugin {
   async onload() {
@@ -20,6 +20,12 @@ export default class CustomUriRedirectPlugin extends Plugin {
         this.generateLinkForCurrentNote();
       },
     });
+
+    // Add a ribbon icon to the Obsidian UI
+    const ribbonIconEl = this.addRibbonIcon('link', 'Generate Custom URI Link', (evt: MouseEvent) => {
+      new LinkGeneratorModal(this.app, this).open();
+    });
+    ribbonIconEl.addClass('custom-uri-redirect-plugin-ribbon');
   }
 
   onunload() {
@@ -68,7 +74,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     });
   }
 
-  private async generateLinkForCurrentNote() {
+  public async generateLinkForCurrentNote() {  // Change to public
     console.log('Attempting to generate link for current note');
     const activeFile = this.app.workspace.getActiveFile();
     if (activeFile) {
@@ -77,6 +83,8 @@ export default class CustomUriRedirectPlugin extends Plugin {
       const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
       new Notice(`Generated Link: ${notionUrl}`);
       console.log(`Generated Link: ${notionUrl}`);
+      await navigator.clipboard.writeText(notionUrl);
+      new Notice('Link copied to clipboard');
     } else {
       new Notice('No active note found to generate the link.');
       console.log('No active note found to generate the link');
@@ -116,5 +124,37 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
             console.log('Redirect Domain changed to: ', value);
           })
       );
+  }
+}
+
+class LinkGeneratorModal extends Modal {
+  plugin: CustomUriRedirectPlugin;
+
+  constructor(app: App, plugin: CustomUriRedirectPlugin) {
+    super(app);
+    this.plugin = plugin;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.createEl('h2', { text: 'Generate Custom URI Link' });
+
+    const generateButton = new ButtonComponent(contentEl)
+      .setButtonText('Generate Link')
+      .onClick(async () => {
+        await this.plugin.generateLinkForCurrentNote();
+        this.close();
+      });
+
+    const closeButton = new ButtonComponent(contentEl)
+      .setButtonText('Close')
+      .onClick(() => {
+        this.close();
+      });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }

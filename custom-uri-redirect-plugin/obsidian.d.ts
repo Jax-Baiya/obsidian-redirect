@@ -9,6 +9,7 @@ declare module 'obsidian' {
         registerMarkdownPostProcessor(callback: (el: HTMLElement, ctx: MarkdownPostProcessorContext) => void): void;
         addCommand(command: Command): Command;
         addSettingTab(tab: PluginSettingTab): void;
+        addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement;
     }
 
     export class App {
@@ -50,6 +51,20 @@ declare module 'obsidian' {
 
     export class Notice {
         constructor(message: string);
+    }
+
+    export class Modal {
+        app: App;
+        contentEl: HTMLElement;
+        constructor(app: App);
+        open(): void;
+        close(): void;
+    }
+
+    export class ButtonComponent {
+        constructor(containerEl: HTMLElement);
+        setButtonText(text: string): this;
+        onClick(callback: () => void): this;
     }
 
     export interface Command {
