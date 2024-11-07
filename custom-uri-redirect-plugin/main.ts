@@ -133,7 +133,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           }
         } else if (href.startsWith('obsidian://adv-uri')) {
           const params = new URLSearchParams(href.replace('obsidian://adv-uri?', ''));
-          params.set('newPane', 'true');
+          params.set('newpane', 'true'); // Use 'newpane' for Obsidian URIs
           const vault = params.get('vault');
           const uid = params.get('uid');
           const filepath = params.get('filepath');
@@ -198,11 +198,18 @@ export default class CustomUriRedirectPlugin extends Plugin {
 
   private addMoreOptionsMenu(menu: Menu, file: TFile) {
     menu.addItem((item: MenuItem) => {
-      item.setTitle('Copy Custom URL Link')
+      item.setTitle('Copy Custom URL Link (Note Name)')
         .setIcon('link')
         .onClick(async () => {
-          const linkFormat = 'link'; // or 'name' based on user preference
-          await this.generateLinkForCurrentNoteWithUID(file, linkFormat);
+          await this.generateLinkForCurrentNoteWithUID(file, 'name');
+        });
+    });
+
+    menu.addItem((item: MenuItem) => {
+      item.setTitle('Copy Custom URL Link (Link)')
+        .setIcon('link')
+        .onClick(async () => {
+          await this.generateLinkForCurrentNoteWithUID(file, 'link');
         });
     });
   }
