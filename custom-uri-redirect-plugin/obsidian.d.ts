@@ -22,6 +22,10 @@ declare module 'obsidian' {
 
     export class Workspace {
         getActiveFile(): TFile | null;
+
+        // Add the 'on' method to listen for events like 'file-menu'
+        on(name: 'file-menu', callback: (menu: Menu, file: TFile) => void): EventRef;
+        // ...other event methods if needed
     }
 
     export class Vault {
@@ -98,4 +102,18 @@ declare module 'obsidian' {
     }
 
     export class EventRef {}
+
+    // Define the 'Menu' class used in the 'file-menu' event
+    export class Menu {
+        addItem(callback: (item: MenuItem) => void): void;
+        // ...other methods if needed
+    }
+
+    // Define the 'MenuItem' class used to add items to the menu
+    export class MenuItem {
+        setTitle(title: string): this;
+        setIcon(icon: string): this;
+        onClick(callback: () => void): this;
+        // ...other methods if needed
+    }
 }

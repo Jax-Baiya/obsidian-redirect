@@ -12,6 +12,7 @@
             const file = params.get('file');
             const uid = params.get('uid');
             const filepath = params.get('filepath');
+            const newPane = params.get('newpane') || params.get('newPane'); // Handle both cases
 
             let redirectUrl = '';
 
@@ -23,6 +24,11 @@
                 if (vault && uid && filepath) {
                     redirectUrl = `obsidian://advanced-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
                 }
+            }
+
+            // Append newPane parameter if present
+            if (redirectUrl && newPane === 'true') {
+                redirectUrl += '&newpane=true';
             }
 
             if (redirectUrl) {

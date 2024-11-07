@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile, DropdownComponent, TAbstractFile } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile, DropdownComponent, TAbstractFile, Menu, MenuItem } from 'obsidian';
 import { v4 as uuidv4 } from 'uuid';
 
 interface CustomUriRedirectSettings {
@@ -50,6 +50,11 @@ export default class CustomUriRedirectPlugin extends Plugin {
 
     // Register event to create UID in frontmatter when a new note is created
     this.registerEvent(this.app.vault.on('create', this.onCreateFile.bind(this)));
+
+    // Add option to "More Options" menu
+    this.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file: TFile) => {
+      this.addMoreOptionsMenu(menu, file);
+    }));
   }
 
   onunload() {
@@ -118,21 +123,23 @@ export default class CustomUriRedirectPlugin extends Plugin {
 
         if (href.startsWith('obsidian://open')) {
           const params = new URLSearchParams(href.replace('obsidian://open?', ''));
+          params.set('newpane', 'true'); // Use 'newpane' for Obsidian URIs
           const vault = params.get('vault');
           const file = params.get('file');
 
           if (vault && file) {
-            notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+            notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}&newpane=true`;
             console.log(`Generated Notion URL for obsidian://open: ${notionUrl}`);
           }
         } else if (href.startsWith('obsidian://adv-uri')) {
           const params = new URLSearchParams(href.replace('obsidian://adv-uri?', ''));
+          params.set('newPane', 'true');
           const vault = params.get('vault');
           const uid = params.get('uid');
           const filepath = params.get('filepath');
 
           if (vault && uid && filepath) {
-            notionUrl = `${this.settings.redirectDomain}/?path=obsidian-adv-uri&vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
+            notionUrl = `${this.settings.redirectDomain}/?path=obsidian-adv-uri&vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}&newpane=true`;
             console.log(`Generated Notion URL for obsidian://adv-uri: ${notionUrl}`);
           }
         }
@@ -152,14 +159,14 @@ export default class CustomUriRedirectPlugin extends Plugin {
     if (activeFile) {
       const vaultName = this.app.vault.getName();
       const filePath = activeFile.path;
-      const noteUID = this.getNoteUID(activeFile);
+      const noteUID = await this.ensureNoteUID(activeFile);
       const fileName = activeFile.name;
 
       let notionUrl = '';
       if (this.settings.useNoteUID) {
-        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(noteUID)}`;
+        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(noteUID)}&newpane=true`;
       } else {
-        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}&newpane=true`;
       }
 
       if (linkFormat === 'name') {
@@ -178,11 +185,52 @@ export default class CustomUriRedirectPlugin extends Plugin {
     }
   }
 
-  private getNoteUID(file: TFile): string {
-    // Implement logic to extract or generate UID for the note
-    // For example, you can read the frontmatter and extract the UID field
-    // If UID is not present, generate a new UID and save it to the frontmatter
-    return 'generated-uid'; // Placeholder implementation
+  private async ensureNoteUID(file: TFile): Promise<string> {
+    const fileContent = await this.app.vault.read(file);
+    const frontmatter = this.extractFrontmatter(fileContent);
+    if (!frontmatter.uid) {
+      frontmatter.uid = uuidv4();
+      const updatedContent = this.updateFrontmatter(fileContent, frontmatter);
+      await this.app.vault.modify(file, updatedContent);
+    }
+    return frontmatter.uid;
+  }
+
+  private addMoreOptionsMenu(menu: Menu, file: TFile) {
+    menu.addItem((item: MenuItem) => {
+      item.setTitle('Copy Custom URL Link')
+        .setIcon('link')
+        .onClick(async () => {
+          const linkFormat = 'link'; // or 'name' based on user preference
+          await this.generateLinkForCurrentNoteWithUID(file, linkFormat);
+        });
+    });
+  }
+
+  private async generateLinkForCurrentNoteWithUID(file: TFile, linkFormat: string) {
+    console.log('Attempting to generate link for current note with UID');
+    const vaultName = this.app.vault.getName();
+    const filePath = file.path;
+    const noteUID = await this.ensureNoteUID(file);
+    const fileName = file.name;
+
+    let notionUrl = '';
+    if (this.settings.useNoteUID) {
+      notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(noteUID)}&newpane=true`;
+    } else {
+      notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}&newpane=true`;
+    }
+
+    if (linkFormat === 'name') {
+      new Notice(`Generated Link: [${fileName}](${notionUrl})`);
+      console.log(`Generated Link: [${fileName}](${notionUrl})`);
+      await navigator.clipboard.writeText(`[${fileName}](${notionUrl})`);
+    } else {
+      new Notice(`Generated Link: ${notionUrl}`);
+      console.log(`Generated Link: ${notionUrl}`);
+      await navigator.clipboard.writeText(notionUrl);
+    }
+    new Notice('Link copied to clipboard');
   }
 }
 
