@@ -10,6 +10,8 @@ declare module 'obsidian' {
         addCommand(command: Command): Command;
         addSettingTab(tab: PluginSettingTab): void;
         addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement;
+        loadData(): Promise<any>;
+        saveData(data: any): Promise<void>;
     }
 
     export class App {
@@ -27,6 +29,7 @@ declare module 'obsidian' {
 
     export class TFile {
         path: string;
+        name: string;
     }
 
     export interface MarkdownPostProcessorContext {}
@@ -41,10 +44,23 @@ declare module 'obsidian' {
         setName(name: string): this;
         setDesc(desc: string): this;
         addText(callback: (text: TextComponent) => void): this;
+        addToggle(callback: (toggle: ToggleComponent) => void): this;
+        addDropdown(callback: (dropdown: DropdownComponent) => void): this;
     }
 
     export class TextComponent {
         setPlaceholder(placeholder: string): this;
+        setValue(value: string): this;
+        onChange(callback: (value: string) => void): this;
+    }
+
+    export class ToggleComponent {
+        setValue(value: boolean): this;
+        onChange(callback: (value: boolean) => void): this;
+    }
+
+    export class DropdownComponent {
+        addOption(value: string, display: string): this;
         setValue(value: string): this;
         onChange(callback: (value: string) => void): this;
     }

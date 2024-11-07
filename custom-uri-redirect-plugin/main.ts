@@ -1,8 +1,30 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile } from 'obsidian';
+
+interface CustomUriRedirectSettings {
+  redirectDomain: string;
+  useVaultName: boolean;
+  useVaultID: boolean;
+  useNoteName: boolean;
+  useNoteUID: boolean;
+  linkFormat: string;
+}
+
+const DEFAULT_SETTINGS: CustomUriRedirectSettings = {
+  redirectDomain: 'https://jax-baiya.github.io/obsidian-redirect',
+  useVaultName: true,
+  useVaultID: false,
+  useNoteName: true,
+  useNoteUID: false,
+  linkFormat: 'name', // 'name', 'uid', 'both'
+};
 
 export default class CustomUriRedirectPlugin extends Plugin {
+  settings: CustomUriRedirectSettings = DEFAULT_SETTINGS; // Initialize settings
+
   async onload() {
     console.log('Loading Custom URI Redirect Plugin');
+    await this.loadSettings();
+
     try {
       this.registerMarkdownPostProcessor(this.processCustomUriLinks.bind(this));
     } catch (error) {
@@ -32,6 +54,14 @@ export default class CustomUriRedirectPlugin extends Plugin {
     console.log('Unloading Custom URI Redirect Plugin');
   }
 
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
   public processCustomUriLinks(el: HTMLElement, ctx: any) {
     console.log('Processing custom URI links');
     const links = el.querySelectorAll('div a[href^="obsidian:"]');
@@ -50,7 +80,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           const file = params.get('file');
 
           if (vault && file) {
-            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-open&vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+            notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
             console.log(`Generated Notion URL for obsidian://open: ${notionUrl}`);
           }
         } else if (href.startsWith('obsidian://adv-uri')) {
@@ -60,7 +90,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           const filepath = params.get('filepath');
 
           if (vault && uid && filepath) {
-            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-adv-uri&vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
+            notionUrl = `${this.settings.redirectDomain}/?path=obsidian-adv-uri&vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
             console.log(`Generated Notion URL for obsidian://adv-uri: ${notionUrl}`);
           }
         }
@@ -74,13 +104,24 @@ export default class CustomUriRedirectPlugin extends Plugin {
     });
   }
 
-  public async generateLinkForCurrentNote() {  // Change to public
+  public async generateLinkForCurrentNote() {
     console.log('Attempting to generate link for current note');
     const activeFile = this.app.workspace.getActiveFile();
     if (activeFile) {
       const vaultName = this.app.vault.getName();
       const filePath = activeFile.path;
-      const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+      const noteUID = this.getNoteUID(activeFile);
+      const fileName = activeFile.name;
+
+      let notionUrl = '';
+      if (this.settings.linkFormat === 'name') {
+        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+      } else if (this.settings.linkFormat === 'uid') {
+        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(noteUID)}`;
+      } else if (this.settings.linkFormat === 'both') {
+        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}&uid=${encodeURIComponent(noteUID)}`;
+      }
+
       new Notice(`Generated Link: ${notionUrl}`);
       console.log(`Generated Link: ${notionUrl}`);
       await navigator.clipboard.writeText(notionUrl);
@@ -89,6 +130,13 @@ export default class CustomUriRedirectPlugin extends Plugin {
       new Notice('No active note found to generate the link.');
       console.log('No active note found to generate the link');
     }
+  }
+
+  private getNoteUID(file: TFile): string {
+    // Implement logic to extract or generate UID for the note
+    // For example, you can read the frontmatter and extract the UID field
+    // If UID is not present, generate a new UID and save it to the frontmatter
+    return 'generated-uid'; // Placeholder implementation
   }
 }
 
@@ -113,7 +161,7 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder('https://example.com')
-          .setValue('https://jax-baiya.github.io/obsidian-redirect')
+          .setValue(this.plugin.settings.redirectDomain)
           .onChange(async (value) => {
             console.log(`User changed Redirect Domain to: ${value}`);
             if (!value.startsWith('https://')) {
@@ -121,7 +169,72 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
               console.log('Invalid domain format entered');
               return;
             }
+            this.plugin.settings.redirectDomain = value;
+            await this.plugin.saveSettings();
             console.log('Redirect Domain changed to: ', value);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Use Vault Name')
+      .setDesc('Include the vault name in the generated link.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useVaultName)
+          .onChange(async (value) => {
+            this.plugin.settings.useVaultName = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Use Vault ID')
+      .setDesc('Include the vault ID in the generated link.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useVaultID)
+          .onChange(async (value) => {
+            this.plugin.settings.useVaultID = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Use Note Name')
+      .setDesc('Include the note name in the generated link.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useNoteName)
+          .onChange(async (value) => {
+            this.plugin.settings.useNoteName = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Use Note UID')
+      .setDesc('Include the note UID in the generated link.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useNoteUID)
+          .onChange(async (value) => {
+            this.plugin.settings.useNoteUID = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Link Format')
+      .setDesc('Choose the format of the generated link.')
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('name', 'Note Name')
+          .addOption('uid', 'Note UID')
+          .addOption('both', 'Both Name and UID')
+          .setValue(this.plugin.settings.linkFormat)
+          .onChange(async (value) => {
+            this.plugin.settings.linkFormat = value;
+            await this.plugin.saveSettings();
           })
       );
   }
