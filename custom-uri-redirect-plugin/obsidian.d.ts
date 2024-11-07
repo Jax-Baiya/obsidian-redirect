@@ -12,6 +12,7 @@ declare module 'obsidian' {
         addRibbonIcon(icon: string, title: string, callback: (evt: MouseEvent) => void): HTMLElement;
         loadData(): Promise<any>;
         saveData(data: any): Promise<void>;
+        registerEvent(eventRef: EventRef): void;
     }
 
     export class App {
@@ -25,12 +26,17 @@ declare module 'obsidian' {
 
     export class Vault {
         getName(): string;
+        on(name: string, callback: (file: TAbstractFile) => void): EventRef;
+        read(file: TFile): Promise<string>;
+        modify(file: TFile, data: string): Promise<void>;
     }
 
-    export class TFile {
+    export class TFile extends TAbstractFile {
         path: string;
         name: string;
     }
+
+    export class TAbstractFile {}
 
     export interface MarkdownPostProcessorContext {}
 
@@ -60,8 +66,10 @@ declare module 'obsidian' {
     }
 
     export class DropdownComponent {
+        constructor(containerEl: HTMLElement);
         addOption(value: string, display: string): this;
         setValue(value: string): this;
+        getValue(): string;
         onChange(callback: (value: string) => void): this;
     }
 
@@ -88,4 +96,6 @@ declare module 'obsidian' {
         name: string;
         callback: () => void;
     }
+
+    export class EventRef {}
 }

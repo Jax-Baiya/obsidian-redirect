@@ -1,4 +1,5 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile, DropdownComponent, TAbstractFile } from 'obsidian';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CustomUriRedirectSettings {
   redirectDomain: string;
@@ -6,7 +7,6 @@ interface CustomUriRedirectSettings {
   useVaultID: boolean;
   useNoteName: boolean;
   useNoteUID: boolean;
-  linkFormat: string;
 }
 
 const DEFAULT_SETTINGS: CustomUriRedirectSettings = {
@@ -15,7 +15,6 @@ const DEFAULT_SETTINGS: CustomUriRedirectSettings = {
   useVaultID: false,
   useNoteName: true,
   useNoteUID: false,
-  linkFormat: 'name', // 'name', 'uid', 'both'
 };
 
 export default class CustomUriRedirectPlugin extends Plugin {
@@ -39,7 +38,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
       name: 'Generate Custom URI Link',
       callback: () => {
         console.log('Command executed: Generate Custom URI Link');
-        this.generateLinkForCurrentNote();
+        new LinkGeneratorModal(this.app, this).open();
       },
     });
 
@@ -48,6 +47,9 @@ export default class CustomUriRedirectPlugin extends Plugin {
       new LinkGeneratorModal(this.app, this).open();
     });
     ribbonIconEl.addClass('custom-uri-redirect-plugin-ribbon');
+
+    // Register event to create UID in frontmatter when a new note is created
+    this.registerEvent(this.app.vault.on('create', this.onCreateFile.bind(this)));
   }
 
   onunload() {
@@ -60,6 +62,46 @@ export default class CustomUriRedirectPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  private async onCreateFile(file: TAbstractFile) {
+    if (!(file instanceof TFile)) {
+      return;
+    }
+    const fileContent = await this.app.vault.read(file);
+    const frontmatter = this.extractFrontmatter(fileContent);
+    if (!frontmatter.uid) {
+      frontmatter.uid = uuidv4();
+      const updatedContent = this.updateFrontmatter(fileContent, frontmatter);
+      await this.app.vault.modify(file, updatedContent);
+    }
+  }
+
+  private extractFrontmatter(content: string): any {
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (frontmatterMatch) {
+      return this.parseYaml(frontmatterMatch[1]);
+    }
+    return {};
+  }
+
+  private updateFrontmatter(content: string, frontmatter: any): string {
+    const frontmatterString = this.stringifyYaml(frontmatter);
+    if (content.startsWith('---\n')) {
+      return content.replace(/^---\n[\s\S]*?\n---/, `---\n${frontmatterString}\n---`);
+    } else {
+      return `---\n${frontmatterString}\n---\n${content}`;
+    }
+  }
+
+  private parseYaml(yamlString: string): any {
+    // Implement YAML parsing logic (e.g., using a library like js-yaml)
+    return {}; // Placeholder implementation
+  }
+
+  private stringifyYaml(jsonObject: any): string {
+    // Implement YAML stringification logic (e.g., using a library like js-yaml)
+    return ''; // Placeholder implementation
   }
 
   public processCustomUriLinks(el: HTMLElement, ctx: any) {
@@ -104,7 +146,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     });
   }
 
-  public async generateLinkForCurrentNote() {
+  public async generateLinkForCurrentNote(linkFormat: string) {
     console.log('Attempting to generate link for current note');
     const activeFile = this.app.workspace.getActiveFile();
     if (activeFile) {
@@ -114,17 +156,21 @@ export default class CustomUriRedirectPlugin extends Plugin {
       const fileName = activeFile.name;
 
       let notionUrl = '';
-      if (this.settings.linkFormat === 'name') {
-        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
-      } else if (this.settings.linkFormat === 'uid') {
+      if (this.settings.useNoteUID) {
         notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(noteUID)}`;
-      } else if (this.settings.linkFormat === 'both') {
-        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}&uid=${encodeURIComponent(noteUID)}`;
+      } else {
+        notionUrl = `${this.settings.redirectDomain}/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
       }
 
-      new Notice(`Generated Link: ${notionUrl}`);
-      console.log(`Generated Link: ${notionUrl}`);
-      await navigator.clipboard.writeText(notionUrl);
+      if (linkFormat === 'name') {
+        new Notice(`Generated Link: [${fileName}](${notionUrl})`);
+        console.log(`Generated Link: [${fileName}](${notionUrl})`);
+        await navigator.clipboard.writeText(`[${fileName}](${notionUrl})`);
+      } else {
+        new Notice(`Generated Link: ${notionUrl}`);
+        console.log(`Generated Link: ${notionUrl}`);
+        await navigator.clipboard.writeText(notionUrl);
+      }
       new Notice('Link copied to clipboard');
     } else {
       new Notice('No active note found to generate the link.');
@@ -222,21 +268,6 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
-
-    new Setting(containerEl)
-      .setName('Link Format')
-      .setDesc('Choose the format of the generated link.')
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption('name', 'Note Name')
-          .addOption('uid', 'Note UID')
-          .addOption('both', 'Both Name and UID')
-          .setValue(this.plugin.settings.linkFormat)
-          .onChange(async (value) => {
-            this.plugin.settings.linkFormat = value;
-            await this.plugin.saveSettings();
-          })
-      );
   }
 }
 
@@ -252,10 +283,16 @@ class LinkGeneratorModal extends Modal {
     const { contentEl } = this;
     contentEl.createEl('h2', { text: 'Generate Custom URI Link' });
 
+    const linkFormatDropdown = new DropdownComponent(contentEl);
+    linkFormatDropdown.addOption('name', 'Note Name');
+    linkFormatDropdown.addOption('link', 'Link');
+    linkFormatDropdown.setValue('name');
+
     const generateButton = new ButtonComponent(contentEl)
       .setButtonText('Generate Link')
       .onClick(async () => {
-        await this.plugin.generateLinkForCurrentNote();
+        const linkFormat = linkFormatDropdown.getValue();
+        await this.plugin.generateLinkForCurrentNote(linkFormat);
         this.close();
       });
 
