@@ -1,0 +1,10 @@
+{
+  "id": "custom-uri-redirect-plugin",
+  "name": "Custom URI Redirect Plugin",
+  "version": "0.2.0",
+  "minAppVersion": "0.12.0",
+  "description": "Redirects custom URI schemes to allow Notion-compatible URLs in Obsidian and provides UI for link generation and settings.",
+  "author": "Jax Baiya",
+  "authorUrl": "https://github.com/Jax-Baiya",
+  "isDesktopOnly": false
+}

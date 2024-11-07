@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es6",  // Specify ECMAScript target version
+    "module": "es6",  // Module system to use
+    "lib": ["es6", "dom"],  // Include necessary libraries (e.g., ES6 and DOM APIs)
+    "strict": true,  // Enable strict type-checking options
+    "esModuleInterop": true,  // Allow default imports from CommonJS modules
+    "outDir": "build",  // Output directory for compiled files
+    "importHelpers": true,  // Use tslib helpers for common tasks like async/await
+    "moduleResolution": "node"  // Use Node module resolution strategy to locate modules like tslib
+  },
+  "include": ["src/**/*.ts", "obsidian.d.ts"],  // Include all TypeScript files in the src directory
+  "exclude": ["node_modules"]  // Exclude the node_modules directory
+}
