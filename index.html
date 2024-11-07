@@ -26,7 +26,15 @@
             }
 
             if (redirectUrl) {
-                window.location.href = redirectUrl;
+                document.body.innerHTML = '<h1>Redirecting to Obsidian...</h1>';
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1000); // Delay to ensure the user sees the feedback
+
+                // Fallback mechanism
+                setTimeout(() => {
+                    document.body.innerHTML = '<h1>Redirection failed. Please ensure Obsidian is running and try again.</h1>';
+                }, 5000); // 5 seconds fallback
             } else {
                 document.body.innerHTML = '<h1>Invalid or missing parameters for redirection.</h1>';
             }
@@ -34,6 +42,6 @@
     </script>
 </head>
 <body>
-    <h1>Redirecting...</h1>
+    <h1>Preparing to redirect...</h1>
 </body>
 </html>
