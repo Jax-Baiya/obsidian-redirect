@@ -44,7 +44,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           const file = params.get('file');
 
           if (vault && file) {
-            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin/obsidian-open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/obsidian-open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
             console.log(`Generated Notion URL for obsidian://open: ${notionUrl}`);
           }
         } else if (href.startsWith('obsidian://adv-uri')) {
@@ -54,7 +54,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           const filepath = params.get('filepath');
 
           if (vault && uid && filepath) {
-            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin/obsidian-adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
+            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/obsidian-adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
             console.log(`Generated Notion URL for obsidian://adv-uri: ${notionUrl}`);
           }
         }
@@ -74,7 +74,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     if (activeFile) {
       const vaultName = this.app.vault.getName();
       const filePath = activeFile.path;
-      const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin/obsidian-open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+      const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/obsidian-open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
       new Notice(`Generated Link: ${notionUrl}`);
       console.log(`Generated Link: ${notionUrl}`);
     } else {
@@ -105,7 +105,7 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder('https://example.com')
-          .setValue('https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin')
+          .setValue('https://jax-baiya.github.io/obsidian-redirect')
           .onChange(async (value) => {
             console.log(`User changed Redirect Domain to: ${value}`);
             if (!value.startsWith('https://')) {
