@@ -26,7 +26,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     console.log('Unloading Custom URI Redirect Plugin');
   }
 
-  public processCustomUriLinks(el:      new Notice(`Generated Link: ${notionUrl}`);      console.log(`Generated Link: ${notionUrl}`); HTMLElement, ctx: any)    } else {      new Notice('No active note found to generate the link.');      console.log('No active note found to generate the link');    }  }}class CustomUriRedirectSettingTab extends PluginSettingTab {  plugin: CustomUriRedirectPlugin;  constructor(app: App, plugin: CustomUriRedirectPlugin) {    super(app, plugin);    this.plugin = plugin;  }  display(): void {    const { containerEl } = this;    containerEl.empty();    console.log('Displaying settings for Custom URI Redirect Plugin');    containerEl.createEl('h2', { text: 'Settings for Custom URI Redirect Plugin' });    new Setting(containerEl)      .setName('Redirect Domain')      .setDesc('The base domain used for generating redirected links.')      .addText((text) =>        text          .setPlaceholder('https://example.com')          .setValue('https://jax-baiya.github.io/obsidian-redirect')          .onChange(async (value) => {            console.log(`User changed Redirect Domain to: ${value}`);            if (!value.startsWith('https://')) {              new Notice('Invalid domain format. Please enter a valid URL starting with https://');              console.log('Invalid domain format entered');              return;            }            console.log('Redirect Domain changed to: ', value);          })      );  }} {
+  public processCustomUriLinks(el: HTMLElement, ctx: any) {
     console.log('Processing custom URI links');
     const links = el.querySelectorAll('div a[href^="obsidian:"]');
     console.log(`Found ${links.length} Obsidian URI links`);
@@ -44,7 +44,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           const file = params.get('file');
 
           if (vault && file) {
-            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/obsidian-open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-open&vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
             console.log(`Generated Notion URL for obsidian://open: ${notionUrl}`);
           }
         } else if (href.startsWith('obsidian://adv-uri')) {
@@ -54,7 +54,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
           const filepath = params.get('filepath');
 
           if (vault && uid && filepath) {
-            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/obsidian-adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
+            notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-adv-uri&vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
             console.log(`Generated Notion URL for obsidian://adv-uri: ${notionUrl}`);
           }
         }
@@ -74,7 +74,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     if (activeFile) {
       const vaultName = this.app.vault.getName();
       const filePath = activeFile.path;
-      const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/obsidian-open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+      const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/?path=obsidian-open&vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
       new Notice(`Generated Link: ${notionUrl}`);
       console.log(`Generated Link: ${notionUrl}`);
     } else {

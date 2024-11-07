@@ -7,6 +7,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const params = new URLSearchParams(window.location.search);
+            const path = params.get('path');
             const vault = params.get('vault');
             const file = params.get('file');
             const uid = params.get('uid');
@@ -14,11 +15,11 @@
 
             let redirectUrl = '';
 
-            if (window.location.pathname.includes('obsidian-open')) {
+            if (path === 'obsidian-open') {
                 if (vault && file) {
                     redirectUrl = `obsidian://open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
                 }
-            } else if (window.location.pathname.includes('obsidian-adv-uri')) {
+            } else if (path === 'obsidian-adv-uri') {
                 if (vault && uid && filepath) {
                     redirectUrl = `obsidian://adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
                 }
