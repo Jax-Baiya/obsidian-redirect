@@ -73,7 +73,7 @@ class CustomUriRedirectPlugin extends obsidian.Plugin {
                     const vault = params.get('vault');
                     const file = params.get('file');
                     if (vault && file) {
-                        notionUrl = `https://jax-baiya.github.io/custom-uri-redirect-plugin/obsidian-open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+                        notionUrl = `https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin/obsidian-open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
                         console.log(`Generated Notion URL for obsidian://open: ${notionUrl}`);
                     }
                 }
@@ -83,7 +83,7 @@ class CustomUriRedirectPlugin extends obsidian.Plugin {
                     const uid = params.get('uid');
                     const filepath = params.get('filepath');
                     if (vault && uid && filepath) {
-                        notionUrl = `https://jax-baiya.github.io/custom-uri-redirect-plugin/obsidian-adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
+                        notionUrl = `https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin/obsidian-adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
                         console.log(`Generated Notion URL for obsidian://adv-uri: ${notionUrl}`);
                     }
                 }
@@ -102,7 +102,7 @@ class CustomUriRedirectPlugin extends obsidian.Plugin {
             if (activeFile) {
                 const vaultName = this.app.vault.getName();
                 const filePath = activeFile.path;
-                const notionUrl = `https://jax-baiya.github.io/custom-uri-redirect-plugin/obsidian-open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+                const notionUrl = `https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin/obsidian-open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
                 new obsidian.Notice(`Generated Link: ${notionUrl}`);
                 console.log(`Generated Link: ${notionUrl}`);
             }
@@ -128,7 +128,7 @@ class CustomUriRedirectSettingTab extends obsidian.PluginSettingTab {
             .setDesc('The base domain used for generating redirected links.')
             .addText((text) => text
             .setPlaceholder('https://example.com')
-            .setValue('https://jax-baiya.github.io/custom-uri-redirect-plugin')
+            .setValue('https://jax-baiya.github.io/obsidian-redirect/custom-uri-redirect-plugin')
             .onChange((value) => __awaiter(this, void 0, void 0, function* () {
             console.log(`User changed Redirect Domain to: ${value}`);
             if (!value.startsWith('https://')) {

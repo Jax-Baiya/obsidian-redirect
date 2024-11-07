@@ -1,25 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Redirecting...</title>
-        <script>
-            //Get URL paramaters to retrieve vault and file
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom URI Redirect</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
             const params = new URLSearchParams(window.location.search);
             const vault = params.get('vault');
             const file = params.get('file');
+            const uid = params.get('uid');
+            const filepath = params.get('filepath');
 
-            if (vault && file) {
-                //Create the Obsidian URL
-                const obsidianURI = `obsidian://open?vault=${vault}&file=${encodeURIComponent(file)}`;
-                window.location.href = obsidianURI; // Redirect to Obsidian URI
-            } else {
-                document.write("Invalid or missing parameters for redirect.");
+            let redirectUrl = '';
+
+            if (window.location.pathname.includes('obsidian-open')) {
+                if (vault && file) {
+                    redirectUrl = `obsidian://open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+                }
+            } else if (window.location.pathname.includes('obsidian-adv-uri')) {
+                if (vault && uid && filepath) {
+                    redirectUrl = `obsidian://adv-uri?vault=${encodeURIComponent(vault)}&uid=${encodeURIComponent(uid)}&filepath=${encodeURIComponent(filepath)}`;
+                }
             }
-        </script>    
-    </head>
-    <body>
-        <h1>Redirecting to Obsidian...</h1>
-    </body>
+
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
+                document.body.innerHTML = '<h1>Invalid or missing parameters for redirection.</h1>';
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Redirecting...</h1>
+</body>
 </html>
