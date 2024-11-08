@@ -41,6 +41,16 @@
                 setTimeout(() => {
                     document.body.innerHTML = '<h1>Redirection failed. Please ensure Obsidian is running and try again.</h1>';
                 }, 5000); // 5 seconds fallback
+
+                // Function to close the page after a short delay
+                function closePageAfterDelay() {
+                    setTimeout(() => {
+                        window.close();
+                    }, 7000); // Adjust the delay as needed (7000ms = 7 seconds)
+                }
+
+                // Call the function to close the page
+                closePageAfterDelay();
             } else {
                 document.body.innerHTML = '<h1>Invalid or missing parameters for redirection.</h1>';
             }
