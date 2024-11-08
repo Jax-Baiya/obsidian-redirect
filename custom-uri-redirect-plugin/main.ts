@@ -1,5 +1,6 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile, DropdownComponent, TAbstractFile, Menu, MenuItem } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, TFile, DropdownComponent, TAbstractFile, Menu, MenuItem, HTMLElement } from 'obsidian';
 import { v4 as uuidv4 } from 'uuid';
+import { MarkdownPostProcessorContext } from 'obsidian';
 
 interface CustomUriRedirectSettings {
   redirectDomain: string;
@@ -48,7 +49,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     const ribbonIconEl = this.addRibbonIcon('link', 'Generate Custom URI Link', (evt: MouseEvent) => {
       new LinkGeneratorModal(this.app, this).open();
     });
-    (ribbonIconEl as HTMLElement).classList.add('custom-uri-redirect-plugin-ribbon');
+    ribbonIconEl.classList.add('custom-uri-redirect-plugin-ribbon');
 
     // Register event to create UID in frontmatter when a new note is created
     this.registerEvent(this.app.vault.on('create', this.onCreateFile.bind(this)));
@@ -57,6 +58,9 @@ export default class CustomUriRedirectPlugin extends Plugin {
     this.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file: TFile) => {
       this.addMoreOptionsMenu(menu, file);
     }));
+
+    // Register the URI handler
+    this.registerObsidianProtocolHandler('custom-uri', this.onUriCall.bind(this));
   }
 
   onunload() {
@@ -108,9 +112,9 @@ export default class CustomUriRedirectPlugin extends Plugin {
     return uid;
   }
 
-  public processCustomUriLinks(el: HTMLElement, ctx: any) {
+  public processCustomUriLinks(el: HTMLElement, ctx: MarkdownPostProcessorContext) {
     console.log('Processing custom URI links');
-    const links = el.querySelectorAll('div a[href^="obsidian:"]');
+    const links = (el as unknown as Element).querySelectorAll('div a[href^="obsidian:"]');
     console.log(`Found ${links.length} Obsidian URI links`);
 
     links.forEach((link) => {
@@ -227,6 +231,18 @@ export default class CustomUriRedirectPlugin extends Plugin {
     }
     new Notice('Link copied to clipboard');
   }
+
+  async onUriCall(parameters: { filepath: string; openInNewPane?: boolean }) {
+    await this.handleOpen(parameters);
+  }
+
+  async handleOpen(parameters: { filepath: string; openInNewPane?: boolean }) {
+    const file = this.app.vault.getAbstractFileByPath(parameters.filepath);
+    if (file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf(parameters.openInNewPane);
+      await leaf.openFile(file);
+    }
+  }
 }
 
 class CustomUriRedirectSettingTab extends PluginSettingTab {
@@ -240,7 +256,7 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this as any;
 
-    (containerEl as HTMLElement).innerHTML = '';
+    containerEl.innerHTML = '';
     console.log('Displaying settings for Custom URI Redirect Plugin');
     containerEl.createEl('h2', { text: 'Settings for Custom URI Redirect Plugin' });
 
@@ -347,7 +363,14 @@ class LinkGeneratorModal extends Modal {
   }
 
   onClose() {
-    const { contentEl } = this;
+    const contentEl = this.contentEl as HTMLElement;
     contentEl.innerHTML = '';
   }
 }
+
+// Usage
+const myFunction = (el: HTMLElement, ctx: MarkdownPostProcessorContext): void => {
+  // Your function implementation
+};
+
+// someFunctionThatExpectsMarkdownPostProcessorContext(myFunction); // Commented out as the function is not defined

@@ -11,6 +11,7 @@ declare module 'obsidian' {
         loadData(): Promise<any>;
         saveData(data: any): Promise<void>;
         registerEvent(eventRef: EventRef): void;
+        registerObsidianProtocolHandler(name: string, callback: (params: any) => void): void;
     }
 
     export class App {
@@ -25,6 +26,7 @@ declare module 'obsidian' {
         // Add the 'on' method to listen for events like 'file-menu'
         on(name: 'file-menu', callback: (menu: Menu, file: TFile) => void): EventRef;
         // ...other event methods if needed
+        getLeaf(newLeaf?: boolean): WorkspaceLeaf;
     }
 
     export class Vault {
@@ -32,6 +34,7 @@ declare module 'obsidian' {
         on(name: string, callback: (file: TAbstractFile) => void): EventRef;
         read(file: TFile): Promise<string>;
         modify(file: TFile, data: string): Promise<void>;
+        getAbstractFileByPath(path: string): TAbstractFile | null;
     }
 
     export class MetadataCache {
@@ -123,10 +126,12 @@ declare module 'obsidian' {
         onClick(callback: () => void): this;
         // ...other methods if needed
     }
-}
 
-// Extend HTMLElement with Obsidian's additional methods
-declare global {
+    export class WorkspaceLeaf {
+        openFile(file: TFile): Promise<void>;
+    }
+
+    // Extend HTMLElement with Obsidian's additional methods
     interface HTMLElement {
         addClass(className: string): void;
         removeClass(cls: string): this;
@@ -142,5 +147,7 @@ declare global {
                 type?: string;
             }
         ): HTMLElementTagNameMap[K];
+        classList: DOMTokenList;
+        innerHTML: string;
     }
 }
