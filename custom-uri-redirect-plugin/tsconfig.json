@@ -7,8 +7,14 @@
     "esModuleInterop": true,  // Allow default imports from CommonJS modules
     "outDir": "build",  // Output directory for compiled files
     "importHelpers": true,  // Use tslib helpers for common tasks like async/await
-    "moduleResolution": "node"  // Use Node module resolution strategy to locate modules like tslib
+    "moduleResolution": "node",  // Use Node module resolution strategy to locate modules like tslib
+    // Add typeRoots to specify where to look for type definitions
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
-  "include": ["src/**/*.ts", "obsidian.d.ts"],  // Include all TypeScript files in the src directory
-  "exclude": ["node_modules"]  // Exclude the node_modules directory
+  "include": [
+    "obsidian.d.ts", 
+    "src/**/*.ts",
+    "main.ts" // Ensure main.ts is included
+  ],
+  "exclude": ["node_modules"]
 }

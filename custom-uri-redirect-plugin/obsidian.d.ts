@@ -1,5 +1,3 @@
-// obsidian.d.ts
-
 declare module 'obsidian' {
     // Import core elements from Obsidian's API here
     export class Plugin {
@@ -18,6 +16,7 @@ declare module 'obsidian' {
     export class App {
         workspace: Workspace;
         vault: Vault;
+        metadataCache: MetadataCache; // Add metadataCache property
     }
 
     export class Workspace {
@@ -35,12 +34,20 @@ declare module 'obsidian' {
         modify(file: TFile, data: string): Promise<void>;
     }
 
+    export class MetadataCache {
+        getFileCache(file: TFile): CachedMetadata | null; // Add getFileCache method
+    }
+
     export class TFile extends TAbstractFile {
         path: string;
         name: string;
     }
 
     export class TAbstractFile {}
+
+    export interface CachedMetadata {
+        frontmatter?: Record<string, any>;
+    }
 
     export interface MarkdownPostProcessorContext {}
 
@@ -115,5 +122,25 @@ declare module 'obsidian' {
         setIcon(icon: string): this;
         onClick(callback: () => void): this;
         // ...other methods if needed
+    }
+}
+
+// Extend HTMLElement with Obsidian's additional methods
+declare global {
+    interface HTMLElement {
+        addClass(className: string): void;
+        removeClass(cls: string): this;
+        toggleClass(cls: string, toggle?: boolean): this;
+        hasClass(cls: string): boolean;
+        empty(): void;
+        createEl<K extends keyof HTMLElementTagNameMap>(
+            tagName: K,
+            options?: {
+                text?: string;
+                cls?: string;
+                attr?: Record<string, string>;
+                type?: string;
+            }
+        ): HTMLElementTagNameMap[K];
     }
 }

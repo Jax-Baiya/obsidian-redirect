@@ -7,6 +7,7 @@ interface CustomUriRedirectSettings {
   useVaultID: boolean;
   useNoteName: boolean;
   useNoteUID: boolean;
+  idField: string; // Add idField to settings
 }
 
 const DEFAULT_SETTINGS: CustomUriRedirectSettings = {
@@ -15,6 +16,7 @@ const DEFAULT_SETTINGS: CustomUriRedirectSettings = {
   useVaultID: false,
   useNoteName: true,
   useNoteUID: false,
+  idField: 'uid', // Default idField
 };
 
 export default class CustomUriRedirectPlugin extends Plugin {
@@ -46,7 +48,7 @@ export default class CustomUriRedirectPlugin extends Plugin {
     const ribbonIconEl = this.addRibbonIcon('link', 'Generate Custom URI Link', (evt: MouseEvent) => {
       new LinkGeneratorModal(this.app, this).open();
     });
-    ribbonIconEl.addClass('custom-uri-redirect-plugin-ribbon');
+    (ribbonIconEl as HTMLElement).classList.add('custom-uri-redirect-plugin-ribbon');
 
     // Register event to create UID in frontmatter when a new note is created
     this.registerEvent(this.app.vault.on('create', this.onCreateFile.bind(this)));
@@ -73,40 +75,37 @@ export default class CustomUriRedirectPlugin extends Plugin {
     if (!(file instanceof TFile)) {
       return;
     }
-    const fileContent = await this.app.vault.read(file);
-    const frontmatter = this.extractFrontmatter(fileContent);
-    if (!frontmatter.uid) {
-      frontmatter.uid = uuidv4();
-      const updatedContent = this.updateFrontmatter(fileContent, frontmatter);
-      await this.app.vault.modify(file, updatedContent);
-    }
+    await this.ensureNoteUID(file);
   }
 
-  private extractFrontmatter(content: string): any {
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-    if (frontmatterMatch) {
-      return this.parseYaml(frontmatterMatch[1]);
-    }
-    return {};
-  }
+  private async ensureNoteUID(file: TFile): Promise<string> {
+    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    const fileContent: string = await this.app.vault.read(file);
+    const isYamlEmpty: boolean =
+      (!frontmatter || frontmatter.length === 0) &&
+      !fileContent.match(/^-{3}\s*\n*\r*-{3}/);
+    let splitContent = fileContent.split("\n");
+    const key = `${this.settings.idField}:`;
+    const uid = uuidv4();
 
-  private updateFrontmatter(content: string, frontmatter: any): string {
-    const frontmatterString = this.stringifyYaml(frontmatter);
-    if (content.startsWith('---\n')) {
-      return content.replace(/^---\n[\s\S]*?\n---/, `---\n${frontmatterString}\n---`);
+    if (isYamlEmpty) {
+      splitContent.unshift("---");
+      splitContent.unshift(`${key} ${uid}`);
+      splitContent.unshift("---");
     } else {
-      return `---\n${frontmatterString}\n---\n${content}`;
+      const lineIndexOfKey = splitContent.findIndex((line) =>
+        line.startsWith(key)
+      );
+      if (lineIndexOfKey != -1) {
+        splitContent[lineIndexOfKey] = `${key} ${uid}`;
+      } else {
+        splitContent.splice(1, 0, `${key} ${uid}`);
+      }
     }
-  }
 
-  private parseYaml(yamlString: string): any {
-    // Implement YAML parsing logic (e.g., using a library like js-yaml)
-    return {}; // Placeholder implementation
-  }
-
-  private stringifyYaml(jsonObject: any): string {
-    // Implement YAML stringification logic (e.g., using a library like js-yaml)
-    return ''; // Placeholder implementation
+    const newFileContent = splitContent.join("\n");
+    await this.app.vault.modify(file, newFileContent);
+    return uid;
   }
 
   public processCustomUriLinks(el: HTMLElement, ctx: any) {
@@ -185,17 +184,6 @@ export default class CustomUriRedirectPlugin extends Plugin {
     }
   }
 
-  private async ensureNoteUID(file: TFile): Promise<string> {
-    const fileContent = await this.app.vault.read(file);
-    const frontmatter = this.extractFrontmatter(fileContent);
-    if (!frontmatter.uid) {
-      frontmatter.uid = uuidv4();
-      const updatedContent = this.updateFrontmatter(fileContent, frontmatter);
-      await this.app.vault.modify(file, updatedContent);
-    }
-    return frontmatter.uid;
-  }
-
   private addMoreOptionsMenu(menu: Menu, file: TFile) {
     menu.addItem((item: MenuItem) => {
       item.setTitle('Copy Custom URL Link (Note Name)')
@@ -250,9 +238,9 @@ class CustomUriRedirectSettingTab extends PluginSettingTab {
   }
 
   display(): void {
-    const { containerEl } = this;
+    const { containerEl } = this as any;
 
-    containerEl.empty();
+    (containerEl as HTMLElement).innerHTML = '';
     console.log('Displaying settings for Custom URI Redirect Plugin');
     containerEl.createEl('h2', { text: 'Settings for Custom URI Redirect Plugin' });
 
@@ -335,7 +323,7 @@ class LinkGeneratorModal extends Modal {
   }
 
   onOpen() {
-    const { contentEl } = this;
+    const { contentEl } = this as any;
     contentEl.createEl('h2', { text: 'Generate Custom URI Link' });
 
     const linkFormatDropdown = new DropdownComponent(contentEl);
@@ -360,6 +348,6 @@ class LinkGeneratorModal extends Modal {
 
   onClose() {
     const { contentEl } = this;
-    contentEl.empty();
+    contentEl.innerHTML = '';
   }
 }
